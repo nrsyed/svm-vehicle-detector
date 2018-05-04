@@ -7,52 +7,7 @@ import cv2
 import numpy as np
 from scipy.ndimage.measurements import label
 from descriptor import Descriptor
-
-def slidingWindow(image, init_size=(64,64), x_overlap=0.5, y_step=0.05,
-        x_range=(0, 1), y_range=(0, 1), scale=1.5):
-
-    """
-    Perform a sliding window search across an input image and return a
-    list of the coordinates of each window.
-
-    Window travels along the width of the image (in the +x direction)
-    at a range of heights (toward the bottom of the image in the +y direction).
-    At each successive y, the size of the window is increased by a factor equal
-    to @param scale. The horizontal search area is limited by @param x_range
-    and the vertical search area by @param y_range.
-
-    @param image (array): Source image array.
-    @param init_size (int, int): Initial size of of the window (width, height)
-        in pixels at the initial y, given by @param y_range[0].
-    @param x_overlap (float): Overlap between adjacent windows at a given y
-        as a float in the interval [0, 1), where 0 represents no overlap
-        and 1 represents 100% overlap.
-    @param y_step (float): Distance between successive heights y as a
-        fraction between (0, 1) of the total height of the image.
-    @param x_range (float, float): (min, max) bounds of the horizontal search
-        area as a fraction of the total width of the image.
-    @param y_range (float, float) (min, max) bounds of the vertical search
-        area as a fraction of the total height of the image.
-    @param scale (float): Factor by which to scale up window size at each y.
-    @return windows: List of tuples, where each tuple represents the
-        coordinates of a window in the following order: (upper left corner
-        x coord, upper left corner y coord, lower right corner x coord,
-        lower right corner y coord).
-    """
-
-    windows = []
-    (h, w) = image.shape[:2]
-    for y in range(int(y_range[0] * h), int(y_range[1] * h), int(y_step * h)):
-        win_width = int(init_size[0] + (scale * (y - (y_range[0] * h))))
-        win_height = int(init_size[1] + (scale * (y - (y_range[0] * h))))
-        if y + win_height > int(y_range[1] * h) or win_width > w:
-            break
-        x_step = int((1 - x_overlap) * win_width)
-        for x in range(int(x_range[0] * w), int(x_range[1] * w), x_step):
-            windows.append((x, y, x + win_width, y + win_height))
-
-    return windows
-
+from slidingwindow import slidingWindow
 
 class Detector:
 
@@ -64,7 +19,7 @@ class Detector:
     def __init__(self, init_size=(64,64), x_overlap=0.5, y_step=0.05,
             x_range=(0, 1), y_range=(0, 1), scale=1.5):
         
-        """For input arguments, @see #slidingWindow(...)"""
+        """For input arguments, @see slidingwindow.#slidingWindow(...)"""
 
         self.init_size = init_size
         self.x_overlap = x_overlap
@@ -72,6 +27,7 @@ class Detector:
         self.x_range = x_range
         self.y_range = y_range
         self.scale = scale
+        self.windows = None
 
     def loadClassifier(self, filepath=None, classifier_data=None):
 
@@ -119,8 +75,8 @@ class Detector:
     def classify(self, image):
 
         """
-        Classify windows at different of an image as "positive"
-        (containing the desired object) or "negative".
+        Classify windows of an image as "positive" (containing the desired
+        object) or "negative". Return a list of positively classified windows.
         """
 
         if self.cv_color_const > -1:
@@ -131,23 +87,14 @@ class Detector:
         else:
             image = image[:, :, np.newaxis]
 
-        windows = slidingWindow(image, init_size=self.init_size,
-                x_overlap=self.x_overlap, y_step=self.y_step,
-                x_range=self.x_range, y_range=self.y_range, scale=self.scale)
+        feature_vectors = [self.descriptor.getFeatureVector(
+                image[y_upper:y_lower, x_upper:x_lower, :])
+            for (x_upper, y_upper, x_lower, y_lower) in self.windows]
 
-        feature_vectors = []
-        for (x_upper, y_upper, x_lower, y_lower) in windows: 
-            feature_vectors.append(self.descriptor.getFeatureVector(
-                image[y_upper:y_lower, x_upper:x_lower,:]))
-
-        # Scale feature vectors.
+        # Scale feature vectors, predict, and return predictions.
         feature_vectors = self.scaler.transform(feature_vectors)
-
-        # Classify feature vectors.
         predictions = self.classifier.predict(feature_vectors)
-
-        # Return a list of coordinates of windows classified as positive.
-        return [windows[ind] for ind in np.argwhere(predictions == 1)[:,0]]
+        return [self.windows[ind] for ind in np.argwhere(predictions == 1)[:,0]]
 
     def detectVideo(self, video_capture=None, num_frames=9, threshold=120,
             min_bbox=None, show_video=True, draw_heatmap=True,
@@ -181,8 +128,16 @@ class Detector:
         (grabbed, frame) = cap.read()
         (h, w) = frame.shape[:2]
 
+        # Store coordinates of all windows to be checked at every frame.
+        self.windows = slidingWindow((w, h), init_size=self.init_size,
+                x_overlap=self.x_overlap, y_step=self.y_step,
+                x_range=self.x_range, y_range=self.y_range, scale=self.scale)
+
         if min_bbox is None:
             min_bbox = (int(0.02 * w), int(0.02 * h))
+
+        # Heatmap inset size.
+        inset_size = (int(draw_heatmap_size * w), int(draw_heatmap_size * h))
 
         if write:
             vidFilename = datetime.now().strftime("%Y%m%d%H%M") + ".avi"
@@ -199,9 +154,8 @@ class Detector:
         last_N_frames = deque(maxlen=num_frames)
         heatmap_labels = np.zeros_like(current_heatmap, dtype=np.int)
 
-        # Weights for the frames in last_N_frames, which will be applied
-        # while summing to produce summed_heatmap (more recent frames receive
-        # higher weights and vice versa).
+        # Weights for the frames in last_N_frames for producing summed_heatmap.
+        # Recent frames are weighted more heavily than older frames.
         weights = np.linspace(1 / (num_frames + 1), 1, num_frames)
         while True:
             (grabbed, frame) = cap.read()
@@ -224,12 +178,10 @@ class Detector:
                 dst=summed_heatmap)
 
             if draw_heatmap:
-                inset = cv2.resize(summed_heatmap,
-                    (int(draw_heatmap_size * float(summed_heatmap.shape[1])),
-                    int(draw_heatmap_size * float(summed_heatmap.shape[0]))),
+                inset = cv2.resize(summed_heatmap, inset_size,
                     interpolation=cv2.INTER_AREA)
                 inset = cv2.cvtColor(inset, cv2.COLOR_GRAY2BGR)
-                frame[:inset.shape[0], :inset.shape[1], :] = inset
+                frame[:inset_size[1], :inset_size[0], :] = inset
 
             # Ignore heatmap pixels below threshold.
             summed_heatmap[summed_heatmap <= threshold] = 0
@@ -255,3 +207,8 @@ class Detector:
             if show_video:
                 cv2.imshow("Detection", frame)
                 cv2.waitKey(1)
+
+        cap.release()
+
+        if write:
+            writer.release()

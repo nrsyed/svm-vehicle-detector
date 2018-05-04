@@ -12,8 +12,9 @@ class Descriptor:
     class _skHOGDescriptor:
 
         """
-        Wrapper subclass for skimage.feature.hog(). Mirrors usage of OpenCV
-        cv2.HOGDescriptor.compute().
+        Wrapper subclass for skimage.feature.hog. Wrapping skimage.feature.hog
+        in a class in which we also define a compute() function allows us to
+        mirror the usage of OpenCV cv2.HOGDescriptor class method compute().
         """
 
         def __init__(self, hog_bins, pix_per_cell, cells_per_block,
@@ -47,14 +48,14 @@ class Descriptor:
         Set feature parameters. For HOG features, either the OpenCV
         implementation (cv2.HOGDescriptor) or scikit-image implementation
         (skimage.feature.hog) may be selected via @param hog_lib. Some
-        parameters apply to only one implementation.
+        parameters apply to only one implementation (indicated below).
 
         @param hog_features (bool): Include HOG features in feature vector.
         @param hist_features (bool): Include color channel histogram features
             in feature vector.
         @param spatial_features (bool): Include spatial features in feature vector.
         @param size (int, int): Resize images to this (width, height) before
-            computing features, if necessary.
+            computing features.
         @param hog_lib ["cv", "sk"]: Select the library to be used for HOG
             implementation. "cv" selects OpenCV (@see cv2.HOGDescriptor).
             "sk" selects scikit-image (@see skimage.feature.hog).
@@ -131,8 +132,9 @@ class Descriptor:
         if self.hist_features:
             # np.histogram() returns a tuple if given a 2D array and an array
             # if given a 3D array. To maintain compatibility with other
-            # functions in object detection pipeline, check that input array
-            # has three dimensions; add axis if necessary.
+            # functions in the object detection pipeline, check that the input
+            # array has three dimensions. Add axis if necessary.
+            # Note that histogram bin range assumes uint8 array.
             if len(image.shape) < 3:
                 image = image[:, :, np.newaxis]
 
