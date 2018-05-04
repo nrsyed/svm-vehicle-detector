@@ -40,7 +40,7 @@ def slidingWindow(image_size, init_size=(64,64), x_overlap=0.5, y_step=0.05,
         if y + win_height > int(y_range[1] * h) or win_width > w:
             break
         x_step = int((1 - x_overlap) * win_width)
-        for x in range(int(x_range[0] * w), int(x_range[1] * w) - win_width, x_step):
+        for x in range(int(x_range[0] * w), int(x_range[1] * w), x_step):
             windows.append((x, y, x + win_width, y + win_height))
 
     return windows
