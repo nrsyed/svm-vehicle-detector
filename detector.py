@@ -72,6 +72,8 @@ class Detector:
                 hist_bins=classifier_data["hist_bins"],
                 spatial_size=classifier_data["spatial_size"])
 
+        return self
+
     def classify(self, image):
 
         """
