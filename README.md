@@ -75,7 +75,7 @@ For each frame, a heatmap (in the form of a zero-initialized numpy array) was cr
 ![heatmap](images/heatmap_overlay.png)
 [Link to video with superimposed heatmap](https://youtu.be/OT68xGggpkM)
 
-The heatmaps of the last N frames were stored, and a weighted sum of the heatmaps was taken to produce a "summed heatmap" for the current frame, with older frames given less weight and higher frames given greater weight. The summed heatmap was smoothed and thresholded to ignore pixels with low values. The remaining pixels were categorized into blobs (objects) by `scipy.ndimage.measurements.label()`.
+The heatmaps of the last N frames were stored, and a weighted sum of the heatmaps was taken to produce a "summed heatmap" for the current frame, with older frames given less weight and more recent frames given greater weight. The summed heatmap was smoothed and thresholded to ignore pixels with low values. The remaining pixels were categorized into blobs (objects) by `scipy.ndimage.measurements.label()`.
 
 ![labeled_objects](images/labeled_objects.png)
 [Link to video with labeled objects](https://youtu.be/iOt_3tQJBFY)
@@ -145,6 +145,6 @@ At ~3 FPS, the algorithm was slow to process the video, taking about 7 minutes f
 
 ## Discussion
 
-This project taught me that, while a HOG-based linear SVM can be effective for object detection, it also has the potential to be extremely finicky. Parameters must be carefully tuned and optimized to achieve anything remotely accurate.
+This project demonstrated that, while a HOG-based linear SVM can be effective for object detection, it also has the potential to be extremely finicky. Parameters must be carefully tuned and optimized to achieve anything remotely accurate.
 
-Furthermore, the linear SVM was extremely slow. At 3 FPS, it was not nearly fast enough for real-time object detection. A number of things could be done to improve the speed: 1) optimize the existing code to reduce the number of necessary computations, 2) parallelize the code, 3) utilize the GPU, 4) compile with Cython, rewriting the code as necessary to take advantage of C features like static typing, and 5) get a faster processor! However, this might be more trouble than it's worth considering there are significantly faster algorithms and neural networks that would likely achieve real-time speeds without so much fuss.
+Furthermore, the linear SVM was extremely slow. At 3 FPS, it was not nearly fast enough for real-time object detection. A number of things could be done to improve the speed: 1) optimize the existing code to reduce the number of necessary computations, 2) parallelize the code, 3) utilize the GPU, 4) compile with Cython, rewriting the code as necessary to take advantage of C features like static typing, or 5) throw more processing power at the problem! However, this might be more trouble than it's worth considering there are significantly faster algorithms and neural networks that would likely achieve real-time speeds without so much fuss.
