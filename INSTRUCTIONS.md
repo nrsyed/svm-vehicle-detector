@@ -13,7 +13,7 @@ It may be helpful to check out the examples in [examples.py](https://github.com/
 
 2. **Train the classifier with [```train.trainSVM()```](https://github.com/nrsyed/svm-vehicle-detector/blob/master/train.py).**
    * Supply ```trainSVM()``` with the dict returned by ```processFiles()``` above or with a pickle file saved by ```processFiles()```.
-   * ```trainSVM() returns a dict containing the classifier and all relevant parameters. This dict should be supplied to the detector in the next step. If ```trainSVM(..., output_file=True)```, the dict will be pickled as in the previous step.
+   * ```trainSVM()``` returns a dict containing the classifier and all relevant parameters. This dict should be supplied to the detector in the next step. If ```trainSVM(..., output_file=True)```, the dict will be pickled as in the previous step.
 
 3. **Instantiate a [Detector](https://github.com/nrsyed/svm-vehicle-detector/blob/master/detector.py) and load the classifier dict (or pickle file) from ```trainSVM()``` in the previous step.**
 
