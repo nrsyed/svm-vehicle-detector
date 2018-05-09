@@ -23,7 +23,7 @@ The pipeline consists of the following files:
 * [slidingwindow.py](https://github.com/nrsyed/svm-vehicle-detector/blob/master/slidingwindow.py) contains a helper function for implementing a sliding window search.
 * [detector.py](https://github.com/nrsyed/svm-vehicle-detector/blob/master/detector.py) defines a Detector class that actually utilizes the trained SVM to detect objects in a video.
 
-For detailed examples and information on using these files to train and implement the detection pipeline, see [INSTRUCTIONS.md](INSTRUCTIONS.md).
+For detailed examples and information on using these files to train and implement the detection pipeline, see [INSTRUCTIONS.md](INSTRUCTIONS.md) and the examples in [examples.py](https://github.com/nrsyed/svm-vehicle-detector/blob/master/examples.py).
 
 ### Environment and dependencies
 
